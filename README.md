@@ -2,13 +2,25 @@
 
 ![阅读器、线路、离线书架与评论管理功能示意](docs/overview.svg)
 
-基于 JM2 1.8.2 修改的非官方 Android 漫画阅读器。保留原版首页的推荐编排，增加右起双页、本地 ZIP 阅读、逐章续读和评论过滤。
+**JM 洁净版基于原版 JM2 1.8.2 开发，是非官方 Android 修改版。**保留原版首页的推荐编排，增加右起双页、本地 ZIP 阅读、逐章续读和评论过滤。
 
 **[下载 Android 安装包](https://github.com/Sherkirito/JM-Clean/releases/download/v0.1-rc21/JM-Clean-0.1-rc21-arm64.apk)** · [版本说明与 ZIP](https://github.com/Sherkirito/JM-Clean/releases/tag/v0.1-rc21)
 
 | 当前版本 | Android 内部版本号 | 处理器 | 包名 |
 | --- | --- | --- | --- |
 | 0.1-rc21 | 35 | ARM64 | `com.jiaohua_cleaner` |
+
+## 源码与构建
+
+本仓库公开了 rc21 相对 JM2 新增和修改的应用模块、原生组件、构建补丁及回归测试。项目自行编写的部分采用 [MIT 许可证](LICENSE)。修改过的上游模块保留原有权利，构建底包中的 JM2 程序、素材和第三方组件分别沿用各自的权利与许可。
+
+| 从这里开始 | 内容 |
+| --- | --- |
+| [应用改动](src/) | 阅读器布局与缓存、线路重试、本地历史、评论过滤、界面和导航 |
+| [Android 原生组件](native/) | 本地书架、ZIP 按页读取、文件选择与备份 |
+| [应用构建](build.py) · [原生构建](native_build.py) | 将修改合入 JM2 派生底包，调整清单、组件和资源，编译新增原生代码 |
+| [测试](tests/) · [构建说明](BUILD.md) | 本地验证与生成未签名 APK 的步骤 |
+| [早期工具](tools/early/) | 早期版本的模块检查与修改脚本，供追溯改动使用 |
 
 ## 相比原版 JM2，有哪些变化？
 
