@@ -77,8 +77,8 @@ __d(function(global,require,_i,_a,module,exports,deps){
     for(const r of f.c){
       check(Array.isArray(r) && (r.length===2 || r.length===4) && id(r[0]) && text(r[1],80));
       if(r.length===4){
-        check(id(r[2]) && Array.isArray(r[3]) && r[3].length<=3);
-        for(const s of r[3])check(Array.isArray(s) && s.length===2 && /^[\u3400-\u9fff]{3,10}$/.test(s[0]) && ['link','number','handle'].includes(s[1]));
+        check(id(r[2]) && Array.isArray(r[3]) && r[3].length<=filters.MAX_SHAPES);
+        for(const s of r[3])check(Array.isArray(s) && s.length===2 && filters.validShape(s[0],s[1]));
       }
     }
     for(const key of Object.keys(f.p)){
@@ -111,7 +111,7 @@ __d(function(global,require,_i,_a,module,exports,deps){
       if(author && (!row.author || row.author===author)){
         const merged=new Map((row.shapes||[]).map(s=>[s.type+'/'+fold(s.anchor),s]));
         for(const [anchor,type] of shapes)if(!merged.has(type+'/'+fold(anchor)))merged.set(type+'/'+fold(anchor),{anchor,type});
-        row.author=author;row.shapes=Array.from(merged.values()).slice(0,3);
+        row.author=author;row.shapes=Array.from(merged.values()).slice(0,filters.MAX_SHAPES);
         if(previous && !previous.shapes && row.shapes.length && index>=f.c.length-filters.limits.samples)revived.add(id);
       }
       comments.set(id,row);

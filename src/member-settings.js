@@ -377,7 +377,7 @@ __d(function(g, r, i, a, m, e, d) {
                     style: B.infoRowLeft
                 }, "应用版本"), p.default.createElement(h.Text, {
                     style: B.settingRowRightText
-                }, "JM洁净版 0.1")), p.default.createElement(_0x3eafc7, {
+                }, "JM洁净版 1.0")), p.default.createElement(_0x3eafc7, {
                     title: "备份与恢复",content:"导入 / 导出",onPress:r(d[24]).show,icon:true
                 }), p.default.createElement(_0x3eafc7, {
                     title: (0, L.lang)("切換圖源"),

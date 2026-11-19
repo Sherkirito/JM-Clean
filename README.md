@@ -7,9 +7,9 @@
 </picture>
 </p>
 
-<a href="https://github.com/Sherkirito/JM-Clean/releases/download/v0.1-rc21/JM-Clean-0.1-rc21-arm64.apk"><img src="docs/media/btn-apk.png" alt="下载 APK（21.5 MB）" height="52"></a>&nbsp;&nbsp;<a href="https://github.com/Sherkirito/JM-Clean/releases/tag/v0.1-rc21"><img src="docs/media/btn-notes.png" alt="版本说明" height="52"></a>
+<a href="https://github.com/Sherkirito/JM-Clean/releases/download/v1.0/JM-Clean-1.0-arm64.apk"><img src="docs/media/btn-apk.png" alt="下载 APK（21.5 MB）" height="52"></a>&nbsp;&nbsp;<a href="https://github.com/Sherkirito/JM-Clean/releases/tag/v1.0"><img src="docs/media/btn-notes.png" alt="版本说明" height="52"></a>
 
-<sub>0.1-rc21 · 内部版本 35 · Android ARM64 · 包名 <code>com.jiaohua_cleaner</code>，可与原版 JM2 共存</sub>
+<sub>1.0 · 内部版本 36 · Android ARM64 · 包名 <code>com.jiaohua_cleaner</code>，可与原版 JM2 共存</sub>
 
 </div>
 
@@ -44,7 +44,7 @@ JM 洁净版是基于 JM2 1.8.2 的非官方安卓修改版。首页、分类、
 - **随手处理**：评论菜单里可以屏蔽单条，或按账号拉黑。只在本机生效，随时能在“屏蔽管理”里撤销。
 - **预置规则**：默认开启六条，对付伪装群号、小说合集留号、表情拆号、冒用体验服、韩文网址引流和谐音留号；资源招揽、博彩开户两条按需打开。每条都可以编辑、关闭或删除。
 - **自定义规则**：支持关键词和 RE2 正则。一条简体规则能同时匹配繁体和繁简混写，正则命中时自动拉黑发言账号。
-- **学习建议**：最近 100 条手动屏蔽里，同一种格式涉及至少 3 条评论、2 个账号，才会提示新规则，你确认后才启用。
+- **学习建议**：屏蔽或拉黑评论时，会记下其中的话术和号码、账号、网址格式。同样的内容出现在 2 个账号（同一账号 3 次），就会提示新规则，你确认后才启用。学到的话术能认出字间夹的横杠、空格和表情。
 
 ## 线路、离线与记录
 
@@ -68,7 +68,7 @@ JM 洁净版是基于 JM2 1.8.2 的非官方安卓修改版。首页、分类、
 
 ## 安装
 
-1. 在 ARM64 安卓手机上下载 APK。浏览器拦截 APK 的话，可以从[版本页](https://github.com/Sherkirito/JM-Clean/releases/tag/v0.1-rc21)下载 ZIP，解压后安装。
+1. 在 ARM64 安卓手机上下载 APK。浏览器拦截 APK 的话，可以从[版本页](https://github.com/Sherkirito/JM-Clean/releases/tag/v1.0)下载 ZIP，解压后安装。
 2. 已经装了同签名洁净版的，直接覆盖更新。
 3. 首次打开选一条线路进入首页。有备份的话，在“屏蔽管理 → 备份与恢复”里导入。
 
@@ -94,7 +94,7 @@ JM3 2.1.13 的更新记录里有进度导入导出和小电影分类，2.0.27 �
 
 ## 源码与构建
 
-仓库公开了 rc21 相对 JM2 新增和修改的应用模块、原生组件、构建补丁和回归测试。
+仓库公开了 1.0 相对 JM2 新增和修改的应用模块、原生组件、构建补丁和回归测试。
 
 | 目录 | 内容 |
 | --- | --- |

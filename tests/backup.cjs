@@ -40,7 +40,7 @@ function app(initial) {
   await source.rules.editPreset('trial-address','示例[0-9]+');
   await source.rules.editPreset('novel-group','示例[1-9]+');
   await source.rules.togglePreset('novel-group',false);
-  for (let i=0;i<3;i++) await source.rules.hide('comments',{CID:100+i,UID:200+i,content:'星舟接驳：12345678'});
+  for (let i=0;i<3;i++) await source.rules.hide('comments',{CID:100+i,UID:200+i,content:'星舟接驳：12345678，全-国-高-校-兼-职'});
   await source.rules.save('regex','测试[0-9]+');
   await source.history.open({id:'9',chapter:'42',title:'备份标题',total:12,episode:'2'});
   await source.history.open({id:'10',chapter:'51',title:'新增',total:12,image:'cover.webp'});
@@ -63,7 +63,9 @@ function app(initial) {
   assert.equal(Object.fromEntries(result.p)['31'],6);assert.equal(Object.fromEntries(result.p)['51'],4);
   assert.equal(result.m,'rtl');assert.equal(result.f.u[0][1],'本机昵称');assert.equal(result.f.r.length,2);
   assert.equal(result.f.c.length,3);assert.equal(result.f.c[0][3][0][0],'星舟接驳');
+  assert.deepEqual(result.f.c[0][3][1],['全国高校兼职','phrase']);
   assert.equal(target.rules.suggestions(target.rules.get().value)[0].count,3);
+  assert(target.rules.suggestions(target.rules.get().value).some(x=>x.anchor==='全国高校兼职' && x.authors===3));
   assert.equal(result.f.p['trial-address'].deleted,true);assert.equal(result.f.p['novel-group'].enabled,false);
   assert.equal(result.f.p['novel-group'].pattern,'示例[1-9]+');
   assert.equal(target.values.get('session.test'),'private');

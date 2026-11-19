@@ -81,9 +81,13 @@ async function mixedScriptChecks(){
  await c.hide('comments',parent);assert.equal(visible(rows).length,1);await c.remove('comments','3');assert.equal(visible(rows)[0],parent);
  await assert.rejects(c.hide('users',{UID:0}));
  const seeds=[rec('71',1,'星舟接驳：12345678'),rec(72,2,'星舟接驳：22345678'),rec(73,1,'星舟接驳：32345678')],fourth=row('星舟接驳：92345678');
- await c.hide('comments',seeds[0]);await c.hide('comments',seeds[0]);await c.hide('comments',seeds[1]);assert.equal(c.suggestions(c.get().value).length,0);
- await c.hide('comments',seeds[2]);let suggestion=c.suggestions(c.get().value)[0];assert.equal(suggestion.count,3);assert.equal(suggestion.authors,2);assert.equal(visible([fourth]).length,1);
- await c.remove('comments','71');assert.equal(c.suggestions(c.get().value).length,0);await c.hide('comments',seeds[0]);assert(!raw.includes('32345678'));
+ await c.hide('comments',seeds[0]);await c.hide('comments',seeds[0]);assert.equal(c.suggestions(c.get().value).length,0);
+ // 两个账号各一次即可给出建议
+ await c.hide('comments',seeds[1]);let suggestion=c.suggestions(c.get().value)[0];assert.equal(suggestion.count,2);assert.equal(suggestion.authors,2);
+ await c.hide('comments',seeds[2]);suggestion=c.suggestions(c.get().value)[0];assert.equal(suggestion.count,3);assert.equal(suggestion.authors,2);assert.equal(visible([fourth]).length,1);
+ await c.remove('comments','71');assert.equal(c.suggestions(c.get().value)[0].count,2);
+ await c.remove('comments','72');assert.equal(c.suggestions(c.get().value).length,0);
+ await c.hide('comments',seeds[1]);await c.hide('comments',seeds[0]);assert(!raw.includes('32345678'));
  await c.decide(suggestion.pattern,true);assert.equal(visible([fourth]).length,0);assert.equal(visible([row('举报：星舟接驳：92345678')]).length,1);
  c=client(storage);await c.load();assert.equal(visible([fourth]).length,0);let rule=c.get().value.rules.find(x=>x.learned);await c.remove('rules',rule.id);assert.equal(visible([fourth]).length,1);await c.decide(suggestion.pattern,false);assert.equal(c.suggestions(c.get().value).length,0);
  await c.allowLearning(false);assert(!c.get().value.comments.some(x=>x.shapes));await c.allowLearning(true);
@@ -105,6 +109,31 @@ async function mixedScriptChecks(){
  }
  assert.equal(c.suggestions(c.get().value).length,2);
  assert(!raw.includes('example.invalid') && !raw.includes('sample_account'));
+
+ // 重复话术：两条真实广告变体，用“拉黑此用户”处理也会留下学习样本
+ const ads=[
+   '💕全-国-高-校-兼-职，同-城-可-约🈯 👉( 地址：숏.한국/가람성 )👈🈯，长.按韩文地址复.制去浏.览嚣访问就可以视 频 调 教，无 尝 给 ，关系让我把这本追下去了',
+   '💕全-国-高-校-兼-职，同-城-可-约🈯 👉( 地址：숏.한국/가람성 )👈🈯，长.按韩文地址复.制去浏.览嚣访问就可以视 频 调 教，无 尝 给 ，最舒服的是配色'
+ ];
+ const phraseOf=anchor=>c.suggestions(c.get().value).find(x=>x.anchor===anchor);
+ await c.hide('users',rec(1001,301,ads[0]));assert(!phraseOf('全国高校兼职'));
+ await c.hide('users',rec(1002,302,ads[1]));
+ const split=phraseOf('全国高校兼职'),copy=phraseOf('长按韩文地址复制去浏览嚣');
+ assert(split && copy);assert.equal(split.authors,2);assert.equal(split.label,'「全国高校兼职」重复话术');
+ assert(!phraseOf('关系让我把这本追下去了') && !phraseOf('最舒服的是配色'));
+ assert(split.pattern.length<=180 && copy.pattern.length<=180);
+ // 学到的话术容忍字间符号，不误伤正常讨论
+ await c.decide(split.pattern,true);await c.remove('users','301');await c.remove('users','302');
+ for(const text of ['全 - 国·高*校🈯兼职，加我','全国高校兼职了解一下','全國高校兼職'])assert.equal(visible([rec(1100,310,text)]).length,0,text);
+ for(const text of ['全国统一的画风，高校篇比兼职篇好看','全国的高校都放假了，兼职也停了','大学兼职经历','举报：全国高校兼职是骗局'])assert.equal(visible([rec(1101,311,text)]).length,1,text);
+ // 同一账号需要三次
+ for(let n=0;n<2;n++)await c.hide('comments',rec(1200+n,320,'这里有最新的完整合集资源请私聊'));
+ assert(!phraseOf('这里有最新的完整合集资源'));
+ await c.hide('comments',rec(1202,320,'这里有最新的完整合集资源请私聊'));
+ assert.equal(phraseOf('这里有最新的完整合集资源').authors,1);
+ // 重新载入后话术样本仍在
+ c=client(storage);await c.load();assert(phraseOf('长按韩文地址复制去浏览嚣'));
+ assert(c.get().value.comments.some(x=>x.shapes && x.shapes.some(s=>s.type==='phrase')));
 
  for(const pattern of ['(a+)+b','(ab|a)+b'])assert.equal(c.compile(pattern).matcher('a'.repeat(24000)).find(),false);
  console.log('Passed comment filtering, preserved discussion, persistence, undo, user identity, regex validation, suggestion thresholds and consent.');

@@ -48,10 +48,10 @@ __d(function(global,require,_i,_a,module,exports,deps){
     function suggestions(){
       const v=state.value,items=store.suggestions(v);
       return el(RN.View,null,el(RN.View,{style:[line,divider,{paddingHorizontal:14,minHeight:54}]},txt(lang('从手动屏蔽中学习'),15,ink,{flex:1}),el(RN.Switch,{accessibilityLabel:lang('从手动屏蔽中学习'),value:v.learning!==false,disabled:busy,onValueChange:on=>run(()=>store.allowLearning(on))})),
-        note('最近 100 条手动屏蔽中，若至少 3 条来自至少 2 个账号，且重复使用相同短语和号码、账号或网址格式，就会出现建议。启用后可在「自定义」里修改或移除。'),
+        note('屏蔽或拉黑评论时，会记下其中的话术和号码、账号、网址格式。同样的内容出现在 2 个账号（同一账号 3 次），就会在这里给出建议。启用后可在「自定义」里修改或移除。'),
         v.learning!==false && !items.length && note('尚无待确认的建议'),
         items.map(x=>el(RN.View,{key:x.pattern,style:[divider,{paddingHorizontal:14,paddingTop:10}]},
-          txt(x.anchor+' ＋ '+lang(x.title),16,ink,null,true),txt(x.count+lang(' 条手动屏蔽')+' · '+x.authors+lang(' 个账号'),13,muted,{marginVertical:5}),
+          txt(x.label||x.anchor+' ＋ '+lang(x.title),16,ink,null,true),txt(x.count+lang(' 条手动屏蔽')+' · '+x.authors+lang(' 个账号'),13,muted,{marginVertical:5}),
           expanded===x.pattern && txt(x.pattern,13,muted,null,true),el(RN.View,{style:[line,{justifyContent:'flex-end'}]},
           action('查看正则',()=>expand(expanded===x.pattern?'':x.pattern)),action('忽略',()=>run(()=>store.decide(x.pattern,false)),{disabled:busy}),action('启用',()=>run(()=>store.decide(x.pattern,true)),{color:accent,disabled:busy})))));
     }

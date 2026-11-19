@@ -44,7 +44,7 @@ __d(function(global,require,_i,_a,module,exports,deps){
       value[field]=rows.map((row,index)=>{
         const item={id:String(row.id),label:typeof row.label==='string'?row.label.slice(0,80):''};
         if(field==='comments' && index>=rows.length-limits.samples && accountId(String(row.author)) && Array.isArray(row.shapes)){
-          const shapes=row.shapes.filter(s=>s && /^[\u3400-\u9fff]{3,10}$/.test(s.anchor) && ['link','number','handle'].includes(s.type)).slice(0,3);
+          const shapes=row.shapes.filter(s=>s && learning.validShape(s.anchor,s.type)).slice(0,learning.MAX_SHAPES);
           if(shapes.length){item.author=String(row.author);item.shapes=shapes;}
         }
         return item;
@@ -160,13 +160,21 @@ __d(function(global,require,_i,_a,module,exports,deps){
       v.released=v.released.filter(x=>x!==id);
       v.autoUsers=v.autoUsers.filter(x=>x!==id);
     }
+    const sample=()=>{
+      if(v.learning===false || !userId(item))return null;
+      const text=presetText(fold(plain(item.content)));
+      return caution.test(text)?[]:learning.extract(text);
+    };
     if(!v[group].some(x=>x.id===id)){
       const row={id,label:String(item.username||'').slice(0,80)};
-      if(group==='comments' && v.learning!==false && userId(item)){
-        const text=presetText(fold(plain(item.content)));
-        if(!caution.test(text)){row.shapes=learning.extract(text);if(row.shapes.length)row.author=userId(item);}
-      }
+      if(group==='comments'){const shapes=sample();if(shapes){row.shapes=shapes;if(shapes.length)row.author=userId(item);}}
       v[group]=v[group].concat(row);
+    }
+    // Blocking an account from one of its comments also teaches the suggestions; that comment stays hidden.
+    const cid=group==='users' && commentId(item);
+    if(cid && !v.comments.some(x=>x.id===cid)){
+      const shapes=sample();
+      if(shapes && shapes.length)v.comments=v.comments.concat({id:cid,label:String(item.username||'').slice(0,80),author:userId(item),shapes});
     }
   });}
   function plain(html){
@@ -275,5 +283,5 @@ __d(function(global,require,_i,_a,module,exports,deps){
     });
     queue=operation.catch(()=>{});return operation;
   }
-  Object.assign(exports,{get:()=>current,load,limits,mergeRecent,subscribe(fn){listeners.add(fn);return ()=>listeners.delete(fn);},save,hide,remove,togglePreset,presetList,editPreset,deletePreset,backupTransaction,visible,rememberAuthors,plain,compile,userId,commentId,presets,allowLearning,decide,suggestions:learning.suggestions});
+  Object.assign(exports,{get:()=>current,load,limits,mergeRecent,subscribe(fn){listeners.add(fn);return ()=>listeners.delete(fn);},save,hide,remove,togglePreset,presetList,editPreset,deletePreset,backupTransaction,visible,rememberAuthors,plain,compile,userId,commentId,presets,allowLearning,decide,suggestions:learning.suggestions,validShape:learning.validShape,MAX_SHAPES:learning.MAX_SHAPES});
 },2169,[2,2172,2173,2174,651]);
