@@ -197,8 +197,8 @@ def update_version(manifest):
                 if name < len(names) and names[name] == 0x0101021b:
                     if not data[at+15] in (0x10,0x11):
                         raise ValueError('Expected integer versionCode')
-                    struct.pack_into('<I', data, at+16, 36)
-                    return replace_pool_string(data, 8, '1.8.2', '1.0')
+                    struct.pack_into('<I', data, at+16, 38)
+                    return replace_pool_string(data, 8, '1.8.2', '1.1.0')
         pos += length
     raise ValueError('versionCode missing')
 

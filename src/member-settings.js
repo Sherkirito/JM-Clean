@@ -371,13 +371,9 @@ __d(function(g, r, i, a, m, e, d) {
                     style: B.infoRowLeft
                 }, "界面语言"), p.default.createElement(h.Text, {
                     style: B.settingRowRightText
-                }, "简体中文")), p.default.createElement(h.View, {
-                    style: B.infoRow
-                }, p.default.createElement(h.Text, {
-                    style: B.infoRowLeft
-                }, "应用版本"), p.default.createElement(h.Text, {
-                    style: B.settingRowRightText
-                }, "JM洁净版 1.0")), p.default.createElement(_0x3eafc7, {
+                }, "简体中文")), p.default.createElement(_0x3eafc7, {
+                    title: "软件更新", content: "1.1.0 · 检查更新", icon: true, onPress: r(d[25]).check
+                }), p.default.createElement(_0x3eafc7, {
                     title: "备份与恢复",content:"导入 / 导出",onPress:r(d[24]).show,icon:true
                 }), p.default.createElement(_0x3eafc7, {
                     title: (0, L.lang)("切換圖源"),
@@ -492,4 +488,4 @@ __d(function(g, r, i, a, m, e, d) {
             padding: 15
         }
     });
-}, 2039, [ 1, 440, 481, 155, 156, 157, 159, 162, 55, 2, 810, 827, 729, 826, 2040, 647, 731, 410, 650, 1629, 651, 825, 648, 655, 2177 ]);
+}, 2039, [ 1, 440, 481, 155, 156, 157, 159, 162, 55, 2, 810, 827, 729, 826, 2040, 647, 731, 410, 650, 1629, 651, 825, 648, 655, 2177, 2114 ]);

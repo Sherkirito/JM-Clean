@@ -13,6 +13,7 @@ import java.util.List;
 /** Private entry point for the bundled file bridge. Both components run under the app's UID. */
 public final class BackupProvider extends ContentProvider {
     @Override public boolean onCreate() {
+        Updates.get(getContext());
         // Providers initialize before React creates its JS context. The bundled JSC
         // crashed in a HeapHelper while marking the heap on the tested ARM64 phone.
         try {
@@ -25,6 +26,13 @@ public final class BackupProvider extends ContentProvider {
 
     @Override public ParcelFileDescriptor openFile(Uri uri, String mode) throws FileNotFoundException {
         List<String> parts = uri.getPathSegments();
+        if ("r".equals(mode) && parts.size()==1 && "update".equals(parts.get(0))) {
+            getContext().startActivity(new Intent(getContext(),UpdateActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            try {
+                ParcelFileDescriptor[] reply=ParcelFileDescriptor.createPipe();
+                reply[1].close();return reply[0];
+            } catch(java.io.IOException e){throw new FileNotFoundException(e.getMessage());}
+        }
         if("r".equals(mode) && parts.size()>=2 && "offline".equals(parts.get(0)))return OfflineLibrary.get(getContext()).call(parts);
         if (!"r".equals(mode) || parts.size() != 2 || !("export".equals(parts.get(0)) || "import".equals(parts.get(0))) ||
                 !parts.get(1).matches("[a-z0-9]{8,48}")) throw new FileNotFoundException();

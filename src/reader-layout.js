@@ -6,13 +6,13 @@ function installLayout(options) {
   const selector='[id^="page_"],img[id^="album_photo_"]';
   let mode=options.mode, step=1, page=0, focus=options.initial, last=-1;
   let root,track,pages=[],owl,slider,blank=false,ready=false,changing=false,frame=0;
-  let schedulePaint=null,settleFrame=0,stageShift=0;
+  let schedulePaint=null,settleFrame=0;
   let scrollTimer=0,touching=false;
-  let restoring=true,pinned=true,resizeWatch,alignFrame=0,wakeDisplay;
+  let restoring=true,pinned=false,resizeWatch,savedScrollY=0,wakeDisplay;
   const decoding=new WeakMap();
   let cache=options.cache,imageWindow,suspended=false,scrubbing=false,scrubTarget=null;
   let dragRequest=0;
-  let autoDelay=0,autoTimer=0,autoRequest=0,autoTarget=null,autoScrollY=0;
+  let autoDelay=0,autoTimer=0,autoRequest=0,autoTarget=null;
   // The source's lazy loaders still own image assignment and canvas drawing. Request
   // the saved screen as soon as its real URLs appear, even if window.load is stalled.
   function prioritizeResume(){
@@ -62,7 +62,6 @@ function installLayout(options) {
     if(scrubbing)return;
     if(page!==last){
       last=page;
-      if(owl && mode==='vertical' && owl.relative(owl.current())!==page)owl.to(page,0,true);
       // Modern vertical templates observe individual images. A synthetic window scroll
       // would also remeasure every page against vertical offsets during horizontal motion.
       if(!owl && mode!=='vertical' && !window.IntersectionObserver)window.dispatchEvent(new Event('scroll'));
@@ -75,10 +74,9 @@ function installLayout(options) {
     const target=anchor(n);
     if(ready){
       if(mode==='vertical'){
-        if(owl && owl.relative(owl.current())!==target)owl.to(target,0,true);
         pages[target].scrollIntoView({block:'start',behavior:'instant'});
       }
-      else if(owl){owl.to(target,0,true);alignOwlStage(target);}
+      else if(owl)owl.to(target,0,true);
       else track.scrollLeft=(mode.endsWith('rtl')?-1:1)*Math.floor(target/step)*track.clientWidth;
     }else if(mode==='vertical' && typeof window.gotopage==='function')window.gotopage(n);
     else if(mode==='horizontal' && typeof window.horizontalGotoPage==='function')window.horizontalGotoPage(n);
@@ -98,7 +96,7 @@ function installLayout(options) {
     if(imageWindow)imageWindow.show(at);
     if(schedulePaint)schedulePaint();
     if(finish){
-      scrubbing=false;send('jm2Scrubbed',{request});last=-1;report(at);
+      scrubbing=false;scrubTarget=null;send('jm2Scrubbed',{request});last=-1;report(at);
     }
   }
   function realImage(img){
@@ -131,20 +129,6 @@ function installLayout(options) {
     }
     return record.done;
   }
-  // Owl translates by its nominal page widths. Android may paint each item a
-  // fraction narrower, so the difference accumulates with the page number.
-  function alignOwlStage(at){
-    if(owl.relative(owl.current())!==at || owl.is('dragging') || owl.is('animating'))return;
-    const stage=owl.$stage[0],item=pages[at];
-    if(!item || stage.style.left)return;
-    const viewport=stage.parentElement.getBoundingClientRect(),box=item.getBoundingClientRect();
-    if(!viewport.width || !box.width)return;
-    const delta=mode.endsWith('rtl')?viewport.right-box.right:viewport.left-box.left;
-    if(Math.abs(delta)>.5){
-      stageShift+=delta;
-      stage.style.setProperty('--jm2-snap-x',stageShift+'px');
-    }
-  }
   function aligned(node,at=page){
     const r=node.getBoundingClientRect();
     if(r.width<=0 || r.height<=0 || r.bottom<=0 || r.top>=innerHeight)return false;
@@ -167,24 +151,27 @@ function installLayout(options) {
     return node && root && root.contains(node)?node:null;
   }
   function alignSaved(){
-    alignFrame=0;
-    if(!pinned)return;
     const node=resumeNode(page);
     if(node && !aligned(node)){
       if(mode==='vertical')node.scrollIntoView({block:'start',behavior:'instant'});
-      else go(focus);
+      else if(!ready || !owl)go(focus);
     }
   }
-  function queueAlignment(){if(pinned && !alignFrame)alignFrame=requestAnimationFrame(alignSaved);}
+  // Preserve a newly restored strip across a layout change above it only while
+  // the viewport is still parked at its original offset.
+  function resizedStrip(){
+    if(!pinned || suspended)return;
+    if(window.scrollY!==savedScrollY){releaseAnchor();return;}
+    alignSaved();savedScrollY=window.scrollY;
+  }
   function releaseAnchor(event){
     if(restoring || !pinned || event && event.type==='pointermove' && !event.buttons)return;
     pinned=false;
     if(resizeWatch)resizeWatch.disconnect();
-    document.removeEventListener('load',queueAlignment,true);
     for(const type of intentEvents)window.removeEventListener(type,releaseAnchor,true);
     if(!ready)send('jm2LegacyInput');
   }
-  const intentEvents=['pointermove','touchmove','wheel','keydown'];
+  const intentEvents=['pointerdown','touchstart','touchmove','pointermove','wheel','keydown'];
   const stopOnTouch=()=>stopAuto('touch');
   const stopOnHide=()=>{if(document.hidden)stopAuto('hidden');};
   function stopAuto(reason){
@@ -195,8 +182,7 @@ function installLayout(options) {
     window.removeEventListener('wheel',stopOnTouch,true);
     document.removeEventListener('visibilitychange',stopOnHide);
     if(autoTarget!=null){
-      autoTarget=null;go(page);
-      if(mode==='vertical')window.scrollTo(0,autoScrollY);
+      const at=autoTarget;autoTarget=null;report(at);
     }
     send('jm2Auto',{running:false,reason,request:autoRequest});
   }
@@ -231,7 +217,7 @@ function installLayout(options) {
         waitForAutoPage(page,Date.now());return;
       }
       if(page+step>=count){stopAuto('end');return;}
-      autoScrollY=window.scrollY;autoTarget=page+step;go(autoTarget);
+      autoTarget=page+step;go(autoTarget);
       waitForAutoPage(autoTarget,Date.now());
     },autoDelay);
   }
@@ -268,9 +254,12 @@ function installLayout(options) {
         const rect=first.getBoundingClientRect(),geometry=[rect.left,rect.top,rect.width,rect.height];
         if(previous && geometry.every((v,i)=>Math.abs(v-previous[i])<=1)){
           restoring=false;wakeDisplay=null;document.removeEventListener('load',loaded,true);
-          for(const type of intentEvents)window.addEventListener(type,releaseAnchor,{capture:true,passive:true});
-          if(window.ResizeObserver){resizeWatch=new ResizeObserver(queueAlignment);resizeWatch.observe(root);}
-          document.addEventListener('load',queueAlignment,true);
+          pinned=mode==='vertical' || !ready;
+          if(pinned){
+            savedScrollY=window.scrollY;
+            for(const type of intentEvents)window.addEventListener(type,releaseAnchor,{capture:true,passive:true});
+            if(mode==='vertical' && window.ResizeObserver){resizeWatch=new ResizeObserver(resizedStrip);resizeWatch.observe(root);}
+          }
           send(ready?'jm2Ready':'jm2Legacy');report(page);
           return;
         }
@@ -288,7 +277,11 @@ function installLayout(options) {
     scrollTimer=setTimeout(finishNativeScroll,120);
   }
   function onScroll(event){
-    if(pinned){if(!restoring)queueAlignment();return;}
+    if(restoring)return;
+    if(pinned){
+      if(mode==='vertical' && window.scrollY!==savedScrollY)releaseAnchor();
+      else return;
+    }
     if(!owl && mode!=='vertical'){
       if(event.target===track && !('onscrollend' in track))afterScroll();
       return;
@@ -370,12 +363,18 @@ function installLayout(options) {
       // page wrapper and book metadata, but give those callbacks no ownership of the new image.
       if(img.matches('.owl-lazy,.lazy_img')){
         const original=img;
+        const drawing=canvas(original);
+        const keepDrawing=drawing && realImage(original) && original.src===source.href &&
+          drawing.width===original.naturalWidth && drawing.height===original.naturalHeight;
+        if(drawing && !keepDrawing)dropCanvas(original);
         img=document.createElement('img');
         for(const attr of original.attributes){
           if(!['src','loading','fetchpriority'].includes(attr.name))img.setAttribute(attr.name,attr.value);
         }
-        img.classList.remove('owl-lazy','lazy_img','lazy-loaded','hide');
+        img.classList.remove('owl-lazy','lazy_img','lazy-loaded');
+        img.classList.toggle('hide',!!keepDrawing);
         img.style.visibility='';img.style.opacity='1';
+        original.onload=null;
         original.replaceWith(img);
         if(pages[i]===original)pages[i]=img;
         original.removeAttribute('data-src');original.removeAttribute('data-src-retina');original.removeAttribute('data-original');
@@ -384,20 +383,20 @@ function installLayout(options) {
       const record={img,url:source.href,failed:false,local};
       records.set(i,record);indices.set(img,i);
       if(img.getAttribute('src') || img.nextElementSibling?.tagName==='CANVAS')resident.add(i);
-      img.classList.add('jm2-image-slot');
-      if(!img.getAttribute('src'))img.classList.add('jm2-image-idle');
+      img.classList.add('jm2-image-slot','jm2-image-pending');
+      if(!img.getAttribute('src') && !canvas(img))img.classList.add('jm2-image-idle');
     }
     if(!records.size)return null;
     function canvas(img){const node=img.nextElementSibling;return node?.tagName==='CANVAS'?node:null;}
     function dropCanvas(img){
       const node=canvas(img);
-      if(node){img.classList.remove('hide');img.style.visibility='hidden';node.remove();node.width=0;node.height=0;}
+      if(node){img.classList.add('jm2-image-pending');img.classList.remove('hide');img.style.visibility='hidden';node.remove();node.width=0;node.height=0;}
     }
     function forget(i){
       const r=records.get(i),img=r.img;
       if(r.local && r.ticket && !zipQueue.delete(i))send('jm2ZipDrop',{index:i,ticket:r.ticket});
       r.ticket=0;r.pending=false;
-      dropCanvas(img);img.classList.add('jm2-image-idle');img.removeAttribute('src');
+      dropCanvas(img);img.classList.add('jm2-image-idle','jm2-image-pending');img.removeAttribute('src');
       decoding.delete(img);resident.delete(i);
     }
     function load(i,foreground){
@@ -425,6 +424,10 @@ function installLayout(options) {
         // Warm only the current and adjacent drawings for the next gesture.
         decoded(img);
       }
+      // A source renderer may have finished before we adopted this slot.
+      // Keep exactly one presentation, including the frame of a late image load.
+      if(canvas(img))img.classList.add('hide');
+      img.classList.remove('jm2-image-pending');
     }
     function refresh(){
       frameId=0;
@@ -480,8 +483,6 @@ function installLayout(options) {
         img.style.setProperty('--jm2-image-width',img.naturalWidth+'px');
         img.classList.remove('jm2-image-idle');
       }
-      if(scrubTarget!==null && mode==='vertical' && ready && !aligned(pages[scrubTarget]))
-        pages[scrubTarget].scrollIntoView({block:'start',behavior:'instant'});
       schedule();
     }
     root.addEventListener('load',settled,true);root.addEventListener('error',settled,true);
@@ -573,8 +574,6 @@ function installLayout(options) {
       settleFrame=0;
       if(!ready || changing || mode==='vertical' || owl.is('dragging') || owl.is('animating'))return;
       const current=owl.relative(owl.current());
-      alignOwlStage(current);
-      if(pinned && !restoring)queueAlignment();
       report(current);
       if(schedulePaint)schedulePaint();
     });
@@ -586,7 +585,6 @@ function installLayout(options) {
     root.classList.toggle('jm2-owl-vertical',vertical && !!owl);
     root.classList.toggle('jm2-owl-paged',!vertical && !!owl);
     if(owl){
-      stageShift=0;owl.$stage[0].style.removeProperty('--jm2-snap-x');
       if(step===2 && count%2 && !blank){
         owl.add(window.jQuery('<div aria-hidden="true" class="jm2-blank"></div>'));blank=true;
       }else if(step===1 && blank){owl.remove(count);blank=false;}
@@ -630,21 +628,29 @@ function installLayout(options) {
     const style=document.createElement('style');
     style.textContent=`
       #photo-container .owl-item{box-sizing:border-box}
+      #photo-container .jm2-image-pending{visibility:hidden!important}
+      #photo-container img.jm2-image-slot:has(+canvas){display:none!important}
       #photo-container .jm2-image-slot.jm2-image-idle{display:inline-block!important;visibility:hidden!important;width:min(100%,var(--jm2-image-width,100%));aspect-ratio:var(--jm2-image-ratio,2/3);height:auto}
-      #photo-container.jm2-owl-paged .owl-stage{left:var(--jm2-snap-x,auto)}
+      /* Divide Owl's stage itself into equal columns. Each stop uses the same
+         coordinate system as its transform, even with fractional device pixels. */
+      #photo-container.jm2-owl-paged .owl-stage{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);transition-property:transform!important}
+      #photo-container.jm2-owl-paged .owl-stage::after{display:none}
       #photo-container.jm2-owl-paged{top:0!important;transform:none!important;height:100vh}
       #photo-container.jm2-owl-paged :is(.owl-stage-outer,.owl-stage,.owl-item){height:100%}
-      #photo-container.jm2-owl-paged .owl-item{display:flex;flex-direction:column;justify-content:center}
+      #photo-container.jm2-owl-paged .owl-item{display:flex;flex-direction:column;justify-content:center;width:100%!important;min-width:0}
       #photo-container .owl-item .scramble-page{width:100%!important;max-width:100%!important;text-align:center}
       #photo-container:not(.jm2-owl-vertical) .owl-item :is(img,canvas),.jm2-track :is(img,canvas){max-width:100%!important;max-height:100vh!important;object-fit:contain}
-      html.jm2-vertical,html.jm2-vertical body{height:auto!important;overflow-y:auto!important;overflow-x:hidden!important}
+      #photo-container .scramble-page canvas{width:auto!important;height:auto!important;max-width:100%!important}
+      html.jm2-vertical{height:auto!important;overflow-y:auto!important;overflow-x:hidden!important}
+      html.jm2-vertical body{height:auto!important;overflow:visible!important}
+      #photo-container.jm2-owl-vertical{position:relative!important;top:auto!important;transform:none!important;direction:ltr}
       #photo-container.jm2-owl-vertical,#photo-container.jm2-owl-vertical .owl-stage-outer{height:auto!important;overflow:visible!important;touch-action:pan-y!important}
       #photo-container.jm2-owl-vertical .owl-stage{display:block!important;height:auto!important;width:100%!important;direction:ltr;transform:none!important;touch-action:pan-y!important}
-      #photo-container.jm2-owl-vertical .owl-item{float:none!important;width:100%!important;height:auto!important}
+      #photo-container.jm2-owl-vertical.owl-drag .owl-item,#photo-container.jm2-owl-vertical .owl-item{float:none!important;width:100%!important;height:auto!important;touch-action:pan-y pinch-zoom!important}
       #photo-container.jm2-owl-vertical :is(img,canvas){max-width:100%!important;height:auto!important;max-height:none!important}
       .jm2-track{display:flex!important;flex-flow:row nowrap!important;width:100%!important;height:100vh!important;overflow-x:auto!important;overflow-y:hidden!important;scroll-snap-type:x mandatory;scrollbar-width:none}
       .jm2-track::-webkit-scrollbar{display:none}.jm2-track.jm2-rtl{direction:rtl}
-      .jm2-track>.jm2-bookpage{flex:0 0 100%!important;box-sizing:border-box!important;min-width:0!important;margin:0!important;height:100%!important;scroll-snap-align:start;text-align:center}
+      .jm2-track>.jm2-bookpage{flex:0 0 100%!important;box-sizing:border-box!important;min-width:0!important;margin:0!important;height:100%!important;scroll-snap-align:start;scroll-snap-stop:always;text-align:center}
       .jm2-track.jm2-spread>.jm2-bookpage{flex-basis:50%!important}
       .jm2-track.jm2-spread>.jm2-second{scroll-snap-align:none}
       .jm2-track.jm2-pad:after{content:'';flex:0 0 50%}
@@ -652,6 +658,17 @@ function installLayout(options) {
     document.head.appendChild(style);
     imageWindow=installImageWindow();
     if(owl){
+      const closest=owl.closest;
+      owl.closest=function(x,direction){
+        const from=anchor(this.relative(this.current()));
+        if(mode==='vertical')return from;
+        const low=Math.max(0,from-step),high=Math.min(anchor(count-1),from+step);
+        const to=closest.call(this,x,direction);
+        if(to>=0 && to<count)return Math.max(low,Math.min(high,to));
+        // Owl returns -1 for some exact RTL boundaries, then wraps it to the
+        // last item. Resolve that boundary against the neighbouring stops.
+        return [from,low,high].reduce((a,b)=>Math.abs(x-this.coordinates(b))<Math.abs(x-this.coordinates(a))?b:a);
+      };
       if(imageWindow){owl.options.lazyLoadEager=0;owl.settings.lazyLoadEager=0;}
       schedulePaint=installCanvasWindow();
       slider.on('change.owl.carousel.jm2',event=>{

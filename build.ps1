@@ -1,5 +1,5 @@
 param([string]$Java = 'java', [string]$BuildTools = 'E:\Android\sdk\build-tools\35.0.0',
-      [string]$Output = (Join-Path (Split-Path $PSScriptRoot) 'JM-Clean-1.0-arm64.apk'))
+      [string]$Output = (Join-Path (Split-Path $PSScriptRoot) 'JM-Clean-1.1.0-arm64.apk'))
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 $project = Split-Path $PSScriptRoot

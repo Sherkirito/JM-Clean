@@ -35,6 +35,9 @@ def declare_picker(manifest):
     activity=element('activity',[attr('name',3,index('org.jmclean.backup.BackupActivity')),attr('exported',0x12,0),attr('configChanges',0x11,0x4a0)])
     provider=element('provider',[attr('name',3,index('org.jmclean.backup.BackupProvider')),attr('exported',0x12,0),attr('authorities',3,index('com.jiaohua_cleaner.jmbackup'))])
     gate=element('activity',[attr('name',3,index('org.jmclean.backup.OfflineVerification')),attr('exported',0x12,0),attr('configChanges',0x11,0x4a0)])
+    updater=element('activity',[attr('name',3,index('org.jmclean.backup.UpdateActivity')),attr('exported',0x12,0)])
+    apk_provider=element('provider',[attr('name',3,index('org.jmclean.backup.UpdateFileProvider')),attr('exported',0x12,0),
+                                     attr('authorities',3,index('com.jiaohua_cleaner.jmupdate')),attr('grantUriPermissions',0x12,0xffffffff)])
     rest=bytearray(data[8+size:])
     map_tag,map_header,map_size=struct.unpack_from('<HHI',rest)
     if map_tag!=0x180:
@@ -45,7 +48,6 @@ def declare_picker(manifest):
     # The verified shell stores component names as typed string attributes.
     # Remove entire elements, including children such as FileProvider paths.
     excluded={
-        ('uses-permission','android.permission.REQUEST_INSTALL_PACKAGES'),
         ('provider','com.nodece.apkinstallern.RNApkInstallerNFileProvider'),
         ('meta-data','com.google.android.gms.ads.APPLICATION_ID'),
         ('provider','com.google.android.gms.ads.MobileAdsInitProvider'),
@@ -82,7 +84,7 @@ def declare_picker(manifest):
                         break
         if not skip:
             if tag==0x103 and struct.unpack_from('<I',rest,pos+20)[0]==index('application'):
-                output.extend(activity+provider+gate)
+                output.extend(activity+provider+gate+updater+apk_provider)
                 inserted=True
             output.extend(rest[pos:pos+length])
         elif tag==0x103:
