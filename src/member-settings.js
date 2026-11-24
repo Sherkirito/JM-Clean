@@ -372,7 +372,7 @@ __d(function(g, r, i, a, m, e, d) {
                 }, "界面语言"), p.default.createElement(h.Text, {
                     style: B.settingRowRightText
                 }, "简体中文")), p.default.createElement(_0x3eafc7, {
-                    title: "软件更新", content: "1.1.0 · 检查更新", icon: true, onPress: r(d[25]).check
+                    title: "软件更新", content: "1.1.1 · 检查更新", icon: true, onPress: r(d[25]).check
                 }), p.default.createElement(_0x3eafc7, {
                     title: "备份与恢复",content:"导入 / 导出",onPress:r(d[24]).show,icon:true
                 }), p.default.createElement(_0x3eafc7, {

@@ -69,6 +69,34 @@ function installLayout(options) {
       send('jm2Page');
     }
   }
+  // Chrome 85 changed RTL scrollLeft from "max at the start, 0 at the end" to
+  // "0 at the start, negative toward the end". WebView 83 and older still use the
+  // former, so paged RTL tracks measure their position as distance from the start.
+  let rtlScroll='',touchFrom=null;
+  function rtlScrollType(){
+    if(rtlScroll)return rtlScroll;
+    const box=document.createElement('div'),inner=document.createElement('div');
+    box.dir='rtl';box.style.cssText='position:absolute;top:-9999px;width:4px;height:4px;overflow:scroll;visibility:hidden';
+    inner.style.cssText='width:8px;height:1px';box.appendChild(inner);(document.body||document.documentElement).appendChild(box);
+    if(box.scrollLeft>0)rtlScroll='max';
+    else{box.scrollLeft=1;rtlScroll=box.scrollLeft===0?'negative':'positive';}
+    box.remove();return rtlScroll;
+  }
+  function trackOffset(){
+    const x=track.scrollLeft;
+    if(!mode.endsWith('rtl'))return x;
+    const type=rtlScrollType();
+    return type==='negative'?-x:type==='positive'?x:Math.max(0,track.scrollWidth-track.clientWidth-x);
+  }
+  function setTrackOffset(value,smooth){
+    let left=value;
+    if(mode.endsWith('rtl')){
+      const type=rtlScrollType();
+      left=type==='negative'?-value:type==='positive'?value:track.scrollWidth-track.clientWidth-value;
+    }
+    if(smooth && typeof track.scrollTo==='function')track.scrollTo({left,behavior:'smooth'});
+    else track.scrollLeft=left;
+  }
   function go(n){
     n=clamp(n);
     const target=anchor(n);
@@ -77,7 +105,7 @@ function installLayout(options) {
         pages[target].scrollIntoView({block:'start',behavior:'instant'});
       }
       else if(owl)owl.to(target,0,true);
-      else track.scrollLeft=(mode.endsWith('rtl')?-1:1)*Math.floor(target/step)*track.clientWidth;
+      else setTrackOffset(Math.floor(target/step)*track.clientWidth);
     }else if(mode==='vertical' && typeof window.gotopage==='function')window.gotopage(n);
     else if(mode==='horizontal' && typeof window.horizontalGotoPage==='function')window.horizontalGotoPage(n);
     report(target);focus=n;
@@ -269,8 +297,21 @@ function installLayout(options) {
     wakeDisplay=wake;document.addEventListener('load',loaded,true);wake();
   }
   function finishNativeScroll(){
-    if(!touching && ready && !changing && !owl && mode!=='vertical' && track.clientWidth)
-      report(Math.round(Math.abs(track.scrollLeft)/track.clientWidth)*step);
+    if(touching || !ready || changing || owl || mode==='vertical' || !track.clientWidth)return;
+    const width=track.clientWidth,offset=trackOffset();
+    // WebView 83 and older resolve RTL snap points at the wrong end, so those
+    // tracks have CSS snapping turned off (jm2-nosnap) and settle here instead,
+    // one group per swipe like scroll-snap-stop; the next scroll end reports it.
+    let aligned=Math.min(Math.max(0,track.scrollWidth-width),Math.round(offset/width)*width);
+    if(touchFrom!==null){
+      // A deliberate drag turns one group in its direction; a short one returns.
+      const from=Math.round(touchFrom/width)*width,delta=offset-from;
+      aligned=Math.abs(delta)>width*0.12?from+Math.sign(delta)*width:from;
+      aligned=Math.min(Math.max(0,track.scrollWidth-width),Math.max(0,aligned));
+      touchFrom=null;
+    }
+    if(Math.abs(offset-aligned)>2){setTrackOffset(aligned,true);return;}
+    report(Math.round(offset/width)*step);
   }
   function afterScroll(){
     clearTimeout(scrollTimer);
@@ -382,12 +423,12 @@ function installLayout(options) {
       }
       const record={img,url:source.href,failed:false,local};
       records.set(i,record);indices.set(img,i);
-      if(img.getAttribute('src') || img.nextElementSibling?.tagName==='CANVAS')resident.add(i);
+      if(img.getAttribute('src') || (img.nextElementSibling&&img.nextElementSibling.tagName)==='CANVAS')resident.add(i);
       img.classList.add('jm2-image-slot','jm2-image-pending');
       if(!img.getAttribute('src') && !canvas(img))img.classList.add('jm2-image-idle');
     }
     if(!records.size)return null;
-    function canvas(img){const node=img.nextElementSibling;return node?.tagName==='CANVAS'?node:null;}
+    function canvas(img){const node=img.nextElementSibling;return node&&node.tagName==='CANVAS'?node:null;}
     function dropCanvas(img){
       const node=canvas(img);
       if(node){img.classList.add('jm2-image-pending');img.classList.remove('hide');img.style.visibility='hidden';node.remove();node.width=0;node.height=0;}
@@ -524,7 +565,7 @@ function installLayout(options) {
     const indices=new WeakMap(),resident=new Set();
     pages.forEach((node,i)=>{
       indices.set(node,i);
-      if(!imageWindow?.owns(i) && node.querySelector('img[id^="album_photo_"] + canvas'))resident.add(i);
+      if(!(imageWindow&&imageWindow.owns(i)) && node.querySelector('img[id^="album_photo_"] + canvas'))resident.add(i);
     });
     let paintFrame=0;
     function paint(){
@@ -549,7 +590,7 @@ function installLayout(options) {
         resident.delete(i);
       }
       for(let i=low;i<=high;i++){
-        if(imageWindow?.owns(i))continue;
+        if(imageWindow&&imageWindow.owns(i))continue;
         const img=pages[i].querySelector('img[id^="album_photo_"]');
         if(!img)continue;
         if(!img.nextElementSibling && realImage(img)){
@@ -563,7 +604,7 @@ function installLayout(options) {
     function schedule(){if(!paintFrame)paintFrame=requestAnimationFrame(paint);}
     slider.on('loaded.owl.lazy.jm2',event=>{
       const img=event.element && event.element[0],i=img && indices.get(img.closest('.owl-item'));
-      if(i!=null && !imageWindow?.owns(i)){resident.add(i);schedule();}
+      if(i!=null && !(imageWindow&&imageWindow.owns(i))){resident.add(i);schedule();}
     });
     slider.on('dragged.owl.carousel.jm2 translated.owl.carousel.jm2',schedule);
     return schedule;
@@ -595,6 +636,8 @@ function installLayout(options) {
     }else{
       track.classList.toggle('jm2-track',!vertical);
       track.classList.toggle('jm2-rtl',rtl);
+      // Chrome before 85 resolves RTL snap points at the wrong end; settle those tracks in script only.
+      track.classList.toggle('jm2-nosnap',rtl && rtlScrollType()!=='negative');
       track.classList.toggle('jm2-spread',step===2);
       track.classList.toggle('jm2-pad',step===2 && count%2===1);
     }
@@ -630,16 +673,16 @@ function installLayout(options) {
       #photo-container .owl-item{box-sizing:border-box}
       #photo-container .jm2-image-pending{visibility:hidden!important}
       #photo-container img.jm2-image-slot:has(+canvas){display:none!important}
-      #photo-container .jm2-image-slot.jm2-image-idle{display:inline-block!important;visibility:hidden!important;width:min(100%,var(--jm2-image-width,100%));aspect-ratio:var(--jm2-image-ratio,2/3);height:auto}
+      #photo-container .jm2-image-slot.jm2-image-idle{display:inline-block!important;visibility:hidden!important;width:100%;width:min(100%,var(--jm2-image-width,100%));aspect-ratio:var(--jm2-image-ratio,2/3);height:auto}
       /* Divide Owl's stage itself into equal columns. Each stop uses the same
          coordinate system as its transform, even with fractional device pixels. */
       #photo-container.jm2-owl-paged .owl-stage{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);transition-property:transform!important}
       #photo-container.jm2-owl-paged .owl-stage::after{display:none}
       #photo-container.jm2-owl-paged{top:0!important;transform:none!important;height:100vh}
-      #photo-container.jm2-owl-paged :is(.owl-stage-outer,.owl-stage,.owl-item){height:100%}
+      #photo-container.jm2-owl-paged .owl-stage-outer,#photo-container.jm2-owl-paged .owl-stage,#photo-container.jm2-owl-paged .owl-item{height:100%}
       #photo-container.jm2-owl-paged .owl-item{display:flex;flex-direction:column;justify-content:center;width:100%!important;min-width:0}
       #photo-container .owl-item .scramble-page{width:100%!important;max-width:100%!important;text-align:center}
-      #photo-container:not(.jm2-owl-vertical) .owl-item :is(img,canvas),.jm2-track :is(img,canvas){max-width:100%!important;max-height:100vh!important;object-fit:contain}
+      #photo-container:not(.jm2-owl-vertical) .owl-item img,#photo-container:not(.jm2-owl-vertical) .owl-item canvas,.jm2-track img,.jm2-track canvas{max-width:100%!important;max-height:100vh!important;object-fit:contain}
       #photo-container .scramble-page canvas{width:auto!important;height:auto!important;max-width:100%!important}
       html.jm2-vertical{height:auto!important;overflow-y:auto!important;overflow-x:hidden!important}
       html.jm2-vertical body{height:auto!important;overflow:visible!important}
@@ -647,9 +690,9 @@ function installLayout(options) {
       #photo-container.jm2-owl-vertical,#photo-container.jm2-owl-vertical .owl-stage-outer{height:auto!important;overflow:visible!important;touch-action:pan-y!important}
       #photo-container.jm2-owl-vertical .owl-stage{display:block!important;height:auto!important;width:100%!important;direction:ltr;transform:none!important;touch-action:pan-y!important}
       #photo-container.jm2-owl-vertical.owl-drag .owl-item,#photo-container.jm2-owl-vertical .owl-item{float:none!important;width:100%!important;height:auto!important;touch-action:pan-y pinch-zoom!important}
-      #photo-container.jm2-owl-vertical :is(img,canvas){max-width:100%!important;height:auto!important;max-height:none!important}
+      #photo-container.jm2-owl-vertical img,#photo-container.jm2-owl-vertical canvas{max-width:100%!important;height:auto!important;max-height:none!important}
       .jm2-track{display:flex!important;flex-flow:row nowrap!important;width:100%!important;height:100vh!important;overflow-x:auto!important;overflow-y:hidden!important;scroll-snap-type:x mandatory;scrollbar-width:none}
-      .jm2-track::-webkit-scrollbar{display:none}.jm2-track.jm2-rtl{direction:rtl}
+      .jm2-track::-webkit-scrollbar{display:none}.jm2-track.jm2-rtl{direction:rtl}.jm2-track.jm2-nosnap{scroll-snap-type:none!important}
       .jm2-track>.jm2-bookpage{flex:0 0 100%!important;box-sizing:border-box!important;min-width:0!important;margin:0!important;height:100%!important;scroll-snap-align:start;scroll-snap-stop:always;text-align:center}
       .jm2-track.jm2-spread>.jm2-bookpage{flex-basis:50%!important}
       .jm2-track.jm2-spread>.jm2-second{scroll-snap-align:none}
@@ -684,7 +727,7 @@ function installLayout(options) {
       pages.forEach((node,i)=>{node.classList.add('jm2-bookpage');node.classList.toggle('jm2-second',i%2===1);});
       if('onscrollend' in track)track.addEventListener('scrollend',finishNativeScroll);
       else{
-        track.addEventListener('touchstart',()=>{touching=true;clearTimeout(scrollTimer);},{passive:true});
+        track.addEventListener('touchstart',()=>{touching=true;touchFrom=trackOffset();clearTimeout(scrollTimer);},{passive:true});
         const released=()=>{touching=false;if(mode!=='vertical')afterScroll();};
         track.addEventListener('touchend',released,{passive:true});
         track.addEventListener('touchcancel',released,{passive:true});

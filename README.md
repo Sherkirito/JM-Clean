@@ -7,9 +7,9 @@
 </picture>
 </p>
 
-<a href="https://github.com/Sherkirito/JM-Clean/releases/download/v1.1.0/JM-Clean-1.1.0-arm64.apk"><img src="docs/media/btn-apk.png" alt="下载 APK（21.5 MB）" height="52"></a>&nbsp;&nbsp;<a href="https://github.com/Sherkirito/JM-Clean/releases/tag/v1.1.0"><img src="docs/media/btn-notes.png" alt="版本说明" height="52"></a>
+<a href="https://github.com/Sherkirito/JM-Clean/releases/download/v1.1.1/JM-Clean-1.1.1-arm64.apk"><img src="docs/media/btn-apk.png" alt="下载 APK（21.5 MB）" height="52"></a>&nbsp;&nbsp;<a href="https://github.com/Sherkirito/JM-Clean/releases/tag/v1.1.1"><img src="docs/media/btn-notes.png" alt="版本说明" height="52"></a>
 
-<sub>1.1.0 · 内部版本 38 · Android ARM64 · 包名 <code>com.jiaohua_cleaner</code>，可与原版 JM2 共存</sub>
+<sub>1.1.1 · 内部版本 39 · Android ARM64 · 包名 <code>com.jiaohua_cleaner</code>，可与原版 JM2 共存</sub>
 
 </div>
 
@@ -75,8 +75,8 @@
 
 ## 安装
 
-1. 在 ARM64 安卓手机上下载 APK。浏览器拦截 APK 的话，可以从[版本页](https://github.com/Sherkirito/JM-Clean/releases/tag/v1.1.0)下载 ZIP，解压后安装。
-2. 已装同签名洁净版的可直接覆盖安装。1.0 和 1.0.1 用户首次升级到 1.1.0 时，请下载完整 APK。
+1. 在 ARM64 安卓手机上下载 APK。浏览器拦截 APK 的话，可以从[版本页](https://github.com/Sherkirito/JM-Clean/releases/tag/v1.1.1)下载 ZIP，解压后安装。
+2. 已装同签名洁净版的可直接覆盖安装。1.1.0 用户可在应用内更新；1.0 和 1.0.1 用户请下载完整 APK。
 3. 首次打开选一条线路进入首页。有备份的话，在“屏蔽管理 → 备份与恢复”里导入。
 
 冷启动时会在后台检查一次 GitHub 正式版。有新版时，可以选择「应用内更新」「GitHub Release」或「稍后」。在个人设置的「软件更新」也能手动检查。匹配当前安装包时优先下载增量包，下载页也可选完整包。校验完成后，点「安装更新」进入安卓系统安装界面。
@@ -103,7 +103,7 @@ JM3 2.1.13 的更新记录里有进度导入导出和小电影分类，2.0.27 �
 
 ## 源码与构建
 
-仓库公开了 1.1.0 相对 JM2 新增和修改的应用模块、原生组件、构建补丁和回归测试。
+仓库公开了 1.1.1 相对 JM2 新增和修改的应用模块、原生组件、构建补丁和回归测试。
 
 | 目录 | 内容 |
 | --- | --- |

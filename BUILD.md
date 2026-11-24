@@ -33,6 +33,6 @@ RE2JS 随项目分发，许可证位于 [vendor/re2js/LICENSE](vendor/re2js/LICE
 为每个需要支持的旧版执行一次下列命令，输入须为当时实际分发的签名 APK。将生成的 `.jmd.gz` 与完整 APK 一起上传，保留工具生成的文件名。GitHub 提供各附件的 SHA-256。客户端按已安装 APK 的摘要选择补丁，校验还原文件及应用签名，再打开系统安装器。
 
 ```powershell
-python tools/make_update.py JM-Clean-1.0.1-arm64.apk JM-Clean-1.1.0-arm64.apk
-python tests/update-delta.py --base JM-Clean-1.0.1-arm64.apk --target JM-Clean-1.1.0-arm64.apk
+python tools/make_update.py JM-Clean-1.1.0-arm64.apk JM-Clean-1.1.1-arm64.apk
+python tests/update-delta.py --base JM-Clean-1.1.0-arm64.apk --target JM-Clean-1.1.1-arm64.apk
 ```

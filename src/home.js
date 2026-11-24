@@ -3,6 +3,8 @@ __d(function (global, require, _i, _a, module, exports, deps) {
   const Toolbar=require(deps[4]).default, Shortcuts=require(deps[5]).default, Shelf=require(deps[6]).default;
   const Library=require(deps[7]).default, Card=require(deps[8]).default, card=require(deps[9]).comicVerticalListStyle;
   const theme=require(deps[10]).mainStyle, week=require(deps[11]), lang=require(deps[12]).lang;
+  // Android's Image ignores resizeMode for animated GIF resources and crops the banner; Glide stretches it.
+  const FastImage=require(deps[13]);
   const el=React.createElement;
   function albums(list) {
     return Array.isArray(list) ? list.filter(item=>item && (typeof item.id==='number' || typeof item.id==='string')) : null;
@@ -70,7 +72,7 @@ __d(function (global, require, _i, _a, module, exports, deps) {
           maxToRenderPerBatch:3,refreshing:s.refreshing,onRefresh:this.refresh,
           onEndReached:()=>{if(!s.latestError && s.latest.length)this.load(false);},onEndReachedThreshold:0.4,
           ListHeaderComponent:el(RN.View,null,el(Shortcuts),el(RN.TouchableOpacity,{accessibilityLabel:'每周更新',onPress:()=>this.props.navigation.navigate('Week'),style:{marginBottom:10}},
-            el(RN.Image,{source:week,resizeMode:'stretch',style:{width:'100%',aspectRatio:1/0.123}})),
+            el(FastImage,{source:week,resizeMode:'stretch',style:{width:'100%',aspectRatio:1/0.123}})),
             s.feedError && this.retry('推荐加载失败，点击重试',this.refresh)),
           ListFooterComponent:s.latestError ? this.retry('最新上传加载失败，点击重试',()=>this.load(!s.latest.length)) :
             s.busy ? el(RN.ActivityIndicator,{color:'#ff903e',style:{padding:12}}) : null}));
@@ -78,4 +80,4 @@ __d(function (global, require, _i, _a, module, exports, deps) {
   }
   Object.defineProperty(exports,'__esModule',{value:true});
   exports.default=Home;
-},803,[55,2,650,648,808,1420,1422,1598,1424,1620,809,1651,651]);
+},803,[55,2,650,648,808,1420,1422,1598,1424,1620,809,1651,651,730]);
