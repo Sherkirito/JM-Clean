@@ -9,7 +9,7 @@ __d(function(global,require,_i,_a,module,exports,deps){
     const url=info.app_landing_page;
     return el(RN.View,{style:{flex:1,paddingTop:RN.StatusBar.currentHeight||0,backgroundColor:colors.main}},el(Header,{title:'版本信息'}),
       el(RN.ScrollView,{contentContainerStyle:{padding:16}},
-        el(RN.Text,{style:{color:'white',fontSize:18}},'JM洁净版 1.1.1'),
+        el(RN.Text,{style:{color:'white',fontSize:18}},'JM洁净版 1.2.0'),
         el(RN.Button,{title:'检查洁净版更新',color:colors.secondary,onPress:check}),
         !!info.version && el(RN.Text,{style:{color:'white',marginVertical:12}},'源站版本 '+info.version),
         !!info.version_info && el(RN.Text,{style:{color:'white',lineHeight:22}},String(info.version_info)),

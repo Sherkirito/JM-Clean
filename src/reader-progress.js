@@ -1,31 +1,28 @@
 __d(function(global,require,_i,_a,module,exports,deps){
-  const React=require(deps[0]),RN=require(deps[1]),colors=require(deps[2]).colors,el=React.createElement;
-  function Progress({mode,count,page,scrub,series,chapter,open,autoRunning,autoSeconds,onAutoPress,onPauseAuto,onCachePress}){
-    const rtl=mode==='rtl'||mode==='spread-rtl',step=mode.indexOf('spread')===0?2:1;
-    const last=Math.max(0,Math.ceil(count/step)-1),[drag,setDrag]=React.useState(null);
-    const current=Math.min(last,Math.floor(page/step)),shown=drag==null?current:drag;
-    const from=shown*step+1,to=Math.min(from+step-1,count),range=from===to?String(from):from+'–'+to;
-    const index=React.useMemo(()=>series.findIndex(row=>row && String(row.id)===String(chapter)),[series,chapter]);
-    function chapterButton(delta,side){
-      const item=index>=0 && series[index+delta],name=delta>0?'下一章':'上一章';
-      return el(RN.TouchableOpacity,{disabled:!item,accessibilityRole:'button',accessibilityLabel:name,onPress:()=>open(item),style:{minWidth:62,minHeight:44,alignItems:'center',justifyContent:'center',opacity:item?1:.32}},
-        el(RN.Text,{style:{color:colors.primary,fontSize:13}},side==='left'?'‹ '+name:name+' ›'));
+  // 进度条：拖动时画面跟着跳到对应页，松手停在那里。从右往左阅读时整条反向。
+  const React=require(deps[0]),RN=require(deps[1]),colors=require(deps[2]).colors,Icon=require(deps[3]).default,el=React.createElement;
+  function label(start,end){return start===end?String(start+1):(start+1)+'-'+(end+1);}
+  function Progress({count,start,end,rtl,prev,next,onChapter,onScrub,onTouch}){
+    const [drag,setDrag]=React.useState(null),last=Math.max(1,count-1);
+    const shown=drag==null?label(start,end):String(drag+1);
+    const toPage=v=>Math.max(0,Math.min(count-1,Math.round(rtl?last-v:v)));
+    function chapter(item,icon,name){
+      return el(RN.TouchableOpacity,{disabled:!item,accessibilityRole:'button',accessibilityLabel:name,onPress:()=>onChapter(item),
+        style:{width:44,height:44,alignItems:'center',justifyContent:'center',opacity:item?1:0.3}},el(Icon,{name:icon,size:15,color:'white'}));
     }
-    const valueToUnit=n=>Math.min(last,Math.max(0,rtl?last-Math.round(n):Math.round(n)));
-    return el(RN.View,{style:{backgroundColor:colors.main,paddingTop:9,paddingHorizontal:8}},
-      el(RN.View,{style:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingHorizontal:8}},
-        el(RN.Text,{style:{flex:1,color:colors.primary,fontSize:14,fontWeight:'600'}},range+' / '+count),
-        el(RN.TouchableOpacity,{accessibilityRole:'button',accessibilityLabel:'图片缓存',onPress:onCachePress,
-          style:{minHeight:44,justifyContent:'center',paddingHorizontal:8}},el(RN.Text,{style:{fontSize:14,color:colors.primary}},'图片缓存')),
-        el(RN.TouchableOpacity,{accessibilityRole:'button',accessibilityLabel:autoRunning?'暂停自动翻页':'自动翻页',onPress:onAutoPress,
-          style:{minHeight:44,justifyContent:'center',paddingHorizontal:8}},
-          el(RN.Text,{style:{fontSize:14,color:autoRunning?colors.secondary:colors.primary}},autoRunning?'暂停 · '+autoSeconds+' 秒':'自动翻页'))),
-      el(RN.View,{style:{flexDirection:'row',alignItems:'center'}},chapterButton(rtl?1:-1,'left'),
-        el(RN.View,{style:{flex:1,marginHorizontal:2}},el(RN.Slider,{accessibilityLabel:'阅读进度',disabled:last===0,minimumValue:0,maximumValue:Math.max(1,last),value:rtl?last-current:current,step:1,
-          minimumTrackTintColor:rtl?colors.tertiary:colors.secondary,maximumTrackTintColor:rtl?colors.secondary:colors.tertiary,thumbTintColor:colors.secondary,
-          style:{height:48,width:'100%'},onTouchStart:onPauseAuto,onValueChange:n=>{const unit=valueToUnit(n);setDrag(unit);scrub(unit*step,false);},
-          onSlidingComplete:n=>{scrub(valueToUnit(n)*step,true);setDrag(null);}})),
-        chapterButton(rtl?-1:1,'right')));
+    const left=rtl?chapter(next,'step-backward','下一话'):chapter(prev,'step-backward','上一话');
+    const right=rtl?chapter(prev,'step-forward','上一话'):chapter(next,'step-forward','下一话');
+    const ends=[el(RN.Text,{key:'a',style:{color:'white',fontSize:13,fontWeight:'bold',minWidth:44,textAlign:'center'}},shown),
+      el(RN.Text,{key:'b',style:{color:'#a8a8ad',fontSize:13,minWidth:30,textAlign:'center'}},String(count))];
+    return el(RN.View,{style:{flexDirection:'row',alignItems:'center',paddingHorizontal:4,minHeight:48}},
+      left,rtl?ends[1]:ends[0],
+      el(RN.View,{style:{flex:1}},el(RN.Slider,{accessibilityLabel:'阅读进度',disabled:count<2,minimumValue:0,maximumValue:last,step:1,
+        value:rtl?last-start:start,
+        minimumTrackTintColor:rtl?'#5a5a5e':colors.secondary,maximumTrackTintColor:rtl?colors.secondary:'#5a5a5e',thumbTintColor:colors.secondary,
+        style:{height:44,width:'100%'},onTouchStart:onTouch,
+        onValueChange:v=>{const page=toPage(v);setDrag(page);onScrub(page,false);},
+        onSlidingComplete:v=>{onScrub(toPage(v),true);setDrag(null);}})),
+      rtl?ends[0]:ends[1],right);
   }
   Object.defineProperty(exports,'__esModule',{value:true});exports.default=Progress;
-},2163,[55,2,729]);
+},2163,[55,2,729,810]);

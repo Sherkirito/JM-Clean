@@ -27,11 +27,11 @@ __d(function(global,require,_i,_a,module,exports,deps){
       el(Controls,{}),content);
   }
   function surface(){return global.darkMode==='1'?colors.backgroundDark:'white';}
-  function PageStatus({message,actions,loadingLabel}){
+  function PageStatus({message,actions,loadingLabel,fullscreen}){
     const dark=global.darkMode==='1',ink=dark?colors.textPrimaryDark:colors.main;
     const accent=dark?'#FFAA67':'#964400',backgroundColor=surface();
-    return el(RN.View,{style:{flex:1,backgroundColor,paddingTop:RN.StatusBar.currentHeight||0}},
-      el(RN.StatusBar,{hidden:false,translucent:true,backgroundColor:'transparent',barStyle:dark?'light-content':'dark-content'}),
+    return el(RN.View,{style:{flex:1,backgroundColor,paddingTop:fullscreen?0:RN.StatusBar.currentHeight||0}},
+      el(RN.StatusBar,{hidden:!!fullscreen,translucent:true,backgroundColor:'transparent',barStyle:dark?'light-content':'dark-content'}),
       el(Controls,{ink}),el(RN.View,{style:{flex:1,justifyContent:'center',alignItems:'center',padding:24}},
         message?el(RN.Text,{accessibilityLiveRegion:'polite',style:{fontSize:16,color:ink,textAlign:'center'}},message):
           el(RN.ActivityIndicator,{accessibilityLabel:loadingLabel||'正在加载',color:colors.secondary}),

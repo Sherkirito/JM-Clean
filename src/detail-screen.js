@@ -460,7 +460,7 @@ __d(function (g, r, i, a, m, e, d) {
             },
             "bounces": false,
             "snapToEdge": false,
-            "disableScroll": "android" === p.Platform.OS,
+            "disableScroll": false,
             "scrollEvent": p.Animated.event([{
               "nativeEvent": {
                 "contentOffset": {
